@@ -2,6 +2,7 @@
 #include<iostream>
 #include<vector>
 #include<time.h>
+#include<thread>
 using std::cout;
 using std::endl;
 #include<assert.h>
@@ -12,7 +13,7 @@ static const size_t MAX_BYTES = 256 * 1024;
 
 static const size_t NFREELIST = 208;
 
-void*& NextObj(void* obj)
+static void*& NextObj(void* obj)
 {
 	return *(void**)obj;
 }
@@ -57,7 +58,8 @@ public:
 	//[8*1024+1,64*1024]	1024byte对齐		freelist[128, 184)
 	//[64*1024+1,256*1024]	8*1024byte对齐		freelist[184, 208)
 
-	//对齐数
+	//向上对齐数
+	//将 size 向上对齐为 alignNum 的整数倍（如：37 → 40）
 	static inline size_t _RoundUp(size_t size, size_t alignNum)
 	{
 		size_t alignSize;
@@ -72,7 +74,8 @@ public:
 		}
 		return alignSize;
 	}
-
+	//区间对齐入口函数
+	//根据 size 所处的区间，调用 _RoundUp(size, 对应对齐粒度)
 	static inline size_t RoundUp(size_t size)
 	{
 		if (size <= 128)
@@ -101,7 +104,8 @@ public:
 			return -1;
 		}
 	}
-
+	//返回当前分组的下标偏移量
+	//将 bytes 映射为以 alignNum 为粒度的第几个桶
 	static inline size_t _Index(size_t bytes, size_t alignNum)
 	{
 		if (bytes % alignNum == 0)
@@ -114,7 +118,8 @@ public:
 		}
 	}
 
-	// 计算映射的哪一个自由链表桶
+	//映射为 freelist 的下标
+	//将 bytes 对应到 freelist 的下标（共 208 个）
 	static inline size_t Index(size_t bytes)
 	{
 		assert(bytes <= MAX_BYTES);
