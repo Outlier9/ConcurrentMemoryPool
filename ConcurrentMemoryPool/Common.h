@@ -6,12 +6,21 @@
 using std::cout;
 using std::endl;
 #include<assert.h>
+#include <thread>
+#include <mutex>
 
 //小于等于MAX_BYTES，就找ThreadCache申请
 //大于MAX_BYTES，就直接找PageCache或者系统堆申请
 static const size_t MAX_BYTES = 256 * 1024;
-
 static const size_t NFREELIST = 208;
+static const size_t NPAGES = 128;
+
+#ifdef   _WIN64_WIN32
+	typedef unsigned long long PAGE_ID;
+#elif _WIN32
+	typedef size_t PAGE_ID;
+#endif //  _WIN32
+
 
 static void*& NextObj(void* obj)
 {
@@ -29,6 +38,13 @@ public:
 		NextObj(obj) = _freeList;
 		_freeList = obj;
 	}
+
+	void PushRange(void* start, void* end)
+	{
+		NextObj(end) = _freeList;
+		_freeList = start;
+	}
+
 	void* Pop()
 	{
 		assert(_freeList);
@@ -43,8 +59,14 @@ public:
 		return _freeList == nullptr;
 	}
 
+	size_t& MaxSize()
+	{
+		return _maxSize;
+	}
+
 private:
 	void* _freeList = nullptr;
+	size_t _maxSize = 1;
 };
 
 //管理对齐和映射等关系
@@ -147,4 +169,78 @@ public:
 
 		return -1;
 	}
+
+	// 一次thread cache从中心缓存获取多少个
+	static size_t NumMoveSize(size_t size)
+	{
+		assert(size > 0);
+
+		// [2, 512]，一次批量移动多少个对象的(慢启动)上限值
+		// 小对象一次批量上限高
+		// 小对象一次批量上限低
+		int num = MAX_BYTES / size;
+		if (num < 2)
+			num = 2;
+
+		if (num > 512)
+			num = 512;
+
+		return num;
+	}
+};
+
+
+//管理多个连续页
+struct Span
+{
+	PAGE_ID _pageId = 0; // 大块内存起始页的页号
+	size_t  _n = 0;      // 页的数量
+
+	Span* _next = nullptr;	// 双向链表的结构
+	Span* _prev = nullptr;
+
+	size_t _useCount = 0; // 切好小块内存，被分配给thread cache的计数
+	void* _freeList = nullptr;  // 切好的小块内存的自由链表
+};
+
+
+// 带头双向循环链表 
+class SpanList
+{
+public:
+	SpanList()
+	{
+		_head = new Span;
+		_head->_next = _head;
+		_head->_prev = _head;
+	}
+
+	void Insert(Span* pos, Span* newSpan)
+	{
+		assert(pos);
+		assert(newSpan);
+
+		Span* prev = pos->_prev;
+		prev->_next = newSpan;
+		newSpan->_prev = prev;
+		newSpan->_next = pos;
+		pos->_prev = newSpan;
+	}
+
+	void Erase(Span* pos)
+	{
+		assert(pos);
+		assert(pos != _head);
+
+		Span* prev = pos->_prev;
+		Span* next = pos->_next;
+		prev->_next = next;
+		next->_prev = prev;
+	}
+
+private:
+	Span* _head;
+public:
+	std::mutex _mtx; // 桶锁
+
 };

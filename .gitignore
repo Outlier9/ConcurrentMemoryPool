@@ -1,0 +1,63 @@
+# ==========================
+# Visual Studio 忽略项
+# ==========================
+
+## VS 工程文件夹
+.vs/
+*.suo
+*.user
+*.userosscache
+*.sln.docstates
+
+## 编译中间文件
+*.obj
+*.exe
+*.ilk
+*.pdb
+*.ipch
+*.aps
+*.pch
+*.idb
+*.tlog
+*.log
+*.lastbuildstate
+*.vcxproj.*.user
+
+## 编译产物输出目录
+x64/
+Debug/
+Release/
+build/
+out/
+
+## Intellisense 数据库
+*.VC.db
+*.VC.opendb
+
+## 自动生成的布局、缓存等
+*.ncb
+*.sdf
+*.opensdf
+*.cachefile
+*.dbmdl
+*.vspx
+*.vsidx
+*.bak
+*.backup
+*.json.backup
+*.unsaved
+
+## 日志或 crash dump 文件
+*.log
+*.dmp
+
+## 用户配置
+*.userprefs
+
+# ==========================
+# 自定义忽略项（你的项目专用）
+# ==========================
+
+# 忽略线程池生成的缓存对象（如 ThreadCache）
+ConcurrentMemoryPool/ConcurrentAlloc.h
+

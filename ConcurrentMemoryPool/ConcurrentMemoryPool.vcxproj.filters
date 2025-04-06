@@ -27,12 +27,24 @@
     <ClInclude Include="ConcurrentAlloc.h">
       <Filter>头文件</Filter>
     </ClInclude>
+    <ClInclude Include="CentralCache.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="PageCache.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="ConcurrentMemoryPool.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
     <ClCompile Include="ThreadCache.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="CentralCache.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="PageCache.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
   </ItemGroup>
